@@ -1,0 +1,62 @@
+# libraries
+library(tidyverse)
+library(here)
+library(janitor)
+library(shiny)
+library(shinydashboard)
+# included data
+virus<-readr::read_csv("data/viruses.csv")
+# clean data
+virus_c<-virus%>%
+  separate('Host', into=c("host_type_1", "host_type_2", "host_type_3"), sep=",")
+# clean data part 2
+virus_clong<-virus_c%>%
+  pivot_longer(host_type_1:host_type_3,
+               names_to="host_num",
+               values_to="host_type",
+               values_drop_na=T)
+# clean data part 3
+virus_clean<-virus_clong%>%
+  separate('Organism Groups', into=c("domain", "kingdom", "subgroup"), sep=";")%>%
+  filter(Level=="Complete" & (host_type=="human" | host_type=="land plants"))%>%
+  select('host_type', 'Organism Name', 'kingdom','subgroup', 'Size(Mb)', 'GC%', 'Genes','Level')%>%
+  rename(organism_name='Organism Name', kingdom=kingdom, subgroup=subgroup, level="Level", size_mb='Size(Mb)', perc_gc='GC%', host=host_type, genes_num='Genes')%>%
+  arrange(host)
+# app
+ui <- fluidPage(    
+  
+  titlePanel("Viral Data"),
+  #sidebar
+  sidebarLayout(
+    #sidebar input
+    sidebarPanel(
+      selectInput("host", " Select Host:", 
+                  choices=unique(virus_clean$host)),
+      hr(),
+      helpText("Citation")
+    ),
+    
+    # create a spot for the barplot
+    mainPanel(
+      plotOutput("hostPlot")  
+    )
+    
+  )
+)
+
+#server
+server <- function(input, output, session) {
+  session$onSessionEnded(stopApp)
+  #plot info
+  output$hostPlot <- renderPlot({
+    
+    virus_clean %>% 
+      filter(host == input$host) %>% 
+      ggplot(aes(x=size_mb, fill=kingdom))+
+      scale_y_log10()+
+      geom_histogram(color="black", alpha=0.6)+
+      facet_wrap(~host)
+  })
+}
+
+shinyApp(ui, server)
