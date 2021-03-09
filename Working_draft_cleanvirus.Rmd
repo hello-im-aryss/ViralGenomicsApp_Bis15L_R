@@ -78,6 +78,7 @@ virus_clean<-virus_clong%>%
   filter(Level=="Complete" & (host_type=="human" | host_type=="land plants"))%>%
   select('host_type', 'Organism Name', 'kingdom','subgroup', 'Size(Mb)', 'GC%', 'Genes','Level')%>%
   rename(organism_name='Organism Name', kingdom=kingdom, subgroup=subgroup, level="Level", size_mb='Size(Mb)', perc_gc='GC%', host=host_type, genes_num='Genes')%>%
+  mutate(gene_to_genome_ratio=genes_num/size_mb)%>%
   arrange(host)
 virus_clean
 ```
@@ -99,8 +100,57 @@ virus_clean%>%
 ```
 
 
+
 ```{r}
-library(shiny)
-library(shinydashboard)
+virus_clean%>%
+  ggplot(aes(x=size_mb, y=kingdom, color=host, size=perc_gc))+
+  geom_jitter(alpha=0.25)+
+  coord_flip()+
+  theme_solarized()+
+      scale_color_manual(values=colors)+
+      theme(legend.position="top",
+      axis.text.x=element_text(angle=60, hjust=1))
+```
+```{r}
+virus_clean2<-virus%>%
+  separate('Host', into=c("host_type_1", "host_type_2", "host_type_3"), sep=",")%>%
+  pivot_longer(host_type_1:host_type_3,
+               names_to="host_num",
+               values_to="host_type",
+               values_drop_na=T)%>%
+  separate('Organism Groups', into=c("domain", "kingdom", "subgroup"), sep=";")%>%
+  filter(Level=="Complete" & (host_type=="human" | host_type=="land plants"))%>%
+  select('host_type', 'Organism Name', 'kingdom','subgroup', 'Size(Mb)', 'GC%', 'Genes','Level')%>%
+  rename(organism_name='Organism Name', kingdom=kingdom, subgroup=subgroup, level="Level", size_mb='Size(Mb)', perc_gc='GC%', host=host_type, genes_num='Genes')%>%
+  mutate(gene_to_genome_ratio=genes_num/size_mb)%>%
+  arrange(host)
+virus_clean2
+```
+
+```{r}
+virus_clean2%>%
+  group_by(host)%>%
+  ggplot(aes(x=host, y=gene_to_genome_ratio))+
+  geom_boxplot()
+```
+```{r}
+ggplot(virus_clean2, aes(x=genes_num, y=size_mb, size=perc_gc, color=host, group=host))+
+      geom_jitter(alpha=0.25)+
+      facet_grid(. ~kingdom)+
+      #aesthetics
+      theme_solarized()+
+      theme(legend.position="top",
+            axis.text.x=element_text(angle=60, hjust=1))+
+      scale_size(range = c(0.1, 10),
+                 guide = "none") 
+      #labels
+      labs(x="Number of Genes",
+           y="Genome Size (Mb)",
+           size="Percent GC",
+           color="Host")+
+      #text
+      geom_text(aes(x = genes_num, y =  + 3, label = organism_name),
+                color = "grey50",
+                data = filter(virus_clean2, size_mb > 100000 | organism_name %in% c("Zika virus", "West Nile virus", "Rabies lyssavirus")))
 ```
 
