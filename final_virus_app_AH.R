@@ -9,6 +9,7 @@ if (!require("paletteer")) install.packages('paletteer')
 if (!require("bslib")) install.packages('bslib')
 if (!require("devtools")) install.packages('devtools')
 if (!require("shinycssloaders")) install.packages('shinycssloaders')
+if (!require("DT")) install.packages('DT')
 devtools::install_github("johannesbjork/LaCroixColoR")
 # libraries
 library(tidyverse)
@@ -20,6 +21,7 @@ library(ggthemes)
 library(paletteer)
 library(bslib)
 library(shinycssloaders)
+library(DT)
 # included data
 virus<-readr::read_csv("data/viruses.csv")
 #include palette
@@ -47,80 +49,102 @@ ui <- fluidPage(
   #Navbar structure
   navbarPage("Viral Data", theme = bs_theme(version = 4, bootswatch = "minty"),
 
-    # create a spot for the barplot
-  navbarMenu("Exploratory Analysis",
-             tabPanel("Data Unconstrained", fluid=T,
+#navbar menu dropdown
+tabPanel("Home", fluid=T, icon=icon("seedling"),
+         titlePanel("Will viral genome ratios reflect their hosts'?"),
+         fluidRow(
+           column(12,
+                  img(src="https://meme-generator.com/wp-content/uploads/mememe/2019/09/mememe_f5131a1da4bd756b68b82895842522a8-1.jpg"))
+         )
+           ), #close navbar Menu (Home)
+  navbarMenu("Exploratory Analysis", icon=icon("virus"),
+             tabPanel("Data Unconstrained", fluid=T, 
                       titlePanel("An Exploratory Analysis"),
                       fluidRow(
-                        column(4,
+                        column(6,
                                sliderInput("zoomx", 
                                            label = "Zoom X Axis", 
                                            min=0, 
                                            max=400, 
                                            value=c(0,400))),
-                        column(4,
+                        column(6,
                                sliderInput("zoomy", 
                                            label = "Zoom Y Axis", 
                                            min=0, 
                                            max=.25, 
-                                           value=c(0,.25))),
-                        fluidRow(
-                          column(6,
-                                 withSpinner(type =6, plotOutput(outputId = "plot",
-                                            brush="plot_brush"
-                                            ))),
+                                           value=c(0,.25)))),
+                      fluidRow(
+                        column(12,
+                               withSpinner(type =6, plotOutput(outputId = "plot",
+                                                               brush="plot_brush"
+                                                               )))),
+                      fluidRow(
+                        column(12,
+                               dataTableOutput(outputId = "virustable1")
+                        )
+                               ),
+                      fluidRow(
                           hr(),
-                          helpText("words here"),
+                          helpText("Chemkaeva, D, 'Genome Information by Organism.' National Center for Biotechnology Information, US National Library of Medicine."),
                           br()
-                        ))),
+                        )),
              tabPanel("Data Logged",fluid=T,
                       titlePanel("A Re-examination"),
                       fluidRow(
-                          column(6,
+                          column(12,
                                  withSpinner(type =6, plotOutput(outputId = "plot1",
                                                         brush="plot_brush"
-                                 ))),
+                                 )))),
+                      fluidRow(
+                          column(12,
+                                 dataTableOutput(outputId = "virustable2")
+                          ),
                           hr(),
-                          helpText("words here"),
+                          helpText("Chemkaeva, D, 'Genome Information by Organism.' National Center for Biotechnology Information, US National Library of Medicine."),
                           br()
                         )),
              tabPanel("Data by Kingdom", fluid=T,
                       titlePanel("And by Kingdom"),
                       fluidRow(
-                        column(4,
+                        column(6,
                                sliderInput("zoomx", 
                                            label = "Zoom X Axis", 
                                            min=0, 
                                            max=400, 
                                            value=c(0,400))),
-                        column(4,
+                        column(6,
                                sliderInput("zoomy", 
                                            label = "Zoom Y Axis", 
                                            min=0, 
                                            max=.25, 
-                                           value=c(0,.25))),
+                                           value=c(0,.25)))),
                       fluidRow(
-                        column(6,
+                        column(12,
                                withSpinner(type =6, plotOutput(outputId = "plot1_5",
                                                       brush="plot_brush"
-                               ))),
+                               )))),
+                      fluidRow(
+                        column(12,
+                               dataTableOutput(outputId = "virustable3")
+                        )),
+                      fluidRow(
                         hr(),
-                        helpText("words here"),
-                        br())),
-)#close navbar options
-  ),#closes navbar Menu Part 1
+                        helpText("Chemkaeva, D, 'Genome Information by Organism.' National Center for Biotechnology Information, US National Library of Medicine."),
+                        br()))
+  ),#end navbar menu drop down
 
-            tabPanel("Mean of Genomic Data", fluid=T,
+            tabPanel("Mean of Genomic Data", fluid=T, icon=icon("viruses"),
                       titlePanel("Mean of Genomic Data"),
                       fluidRow(
-                        column(6,
+                        column(12,
                                withSpinner(type =6, plotOutput(outputId = "plot2",
                                                       brush="plot_brush"
-                                                      ))),
-                        column(6,
-                               dataTableOutput(outputId = "virustable")
-                               )))
-          #close navbar Menu part 2
+                                                      )))),
+                     fluidRow(
+                        column(12,
+                               dataTableOutput(outputId = "virustable4")
+                               )))#close navbar Menu part 2
+          
 )#closes navbar page
 )#closes ui/ fluid page
 
@@ -228,19 +252,30 @@ server <- function(input, output, session) {
 viralbrush<-reactive({
   user_viralbrush<-input$plot_brush
   brushedPoints(virus_app,user_viralbrush)
-})#end brush paramaters
+})#end brush parameters
 
-output$virustable<-DT::renderDataTable({
-  DT::datatable(unique(viralbrush()[,c("organism_name","host")]),
-                colnames=c("Sort"="organism_name", "host"),
-                rownames=F
-  )
-})
+output$virustable1<-DT::renderDataTable({
+  DT::datatable(unique(viralbrush()[,c("organism_name","host","genes_num","size_mb", "perc_gc", "kingdom")]),
+                colnames=c("Kingdom"="kingdom", "Name"="organism_name", "Host"="host", "# of Genes"="genes_num", "Size (Mb)"="size_mb", "% GC"="perc_gc"),
+                rownames=F)
+})#end brush plot one
+output$virustable2<-DT::renderDataTable({
+  DT::datatable(unique(viralbrush()[,c("organism_name","host","genes_num","size_mb", "perc_gc", "kingdom")]),
+                colnames=c("Kingdom"="kingdom", "Name"="organism_name", "Host"="host", "# of Genes"="genes_num", "Size (Mb)"="size_mb", "% GC"="perc_gc"),
+                rownames=F)
+})#end brush plot two
+output$virustable3<-DT::renderDataTable({
+  DT::datatable(unique(viralbrush()[,c("organism_name","host","genes_num","size_mb", "perc_gc", "kingdom")]),
+                colnames=c("Kingdom"="kingdom", "Name"="organism_name", "Host"="host", "# of Genes"="genes_num", "Size (Mb)"="size_mb", "% GC"="perc_gc"),
+                rownames=F)
+})#end brush plot three
+output$virustable4<-DT::renderDataTable({
+  DT::datatable(unique(viralbrush()[,c("organism_name","host","genes_num","size_mb", "perc_gc", "kingdom")]),
+                colnames=c("Kingdom"="kingdom", "Name"="organism_name", "Host"="host", "# of Genes"="genes_num", "Size (Mb)"="size_mb", "% GC"="perc_gc"),
+                rownames=F)
+})#end brush plot four
   }
 
 shinyApp(ui, server)
 
 
-#To do: put in zoom slider
-#put in citation
-#put in hypothesis text
