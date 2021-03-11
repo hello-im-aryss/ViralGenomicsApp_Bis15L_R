@@ -27,7 +27,7 @@ library(stringr)
 
 ```{r}
 
-virus<-readr::read_csv("data/viruses.csv")
+read_csv(here("Yumna Data Cleanup and Graphs", "Data", "viruses.csv")) 
 ```
 
 
