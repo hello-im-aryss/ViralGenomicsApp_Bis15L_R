@@ -1,0 +1,112 @@
+---
+title: "archaea vs bacteria infecting viruses"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#importing data
+```{r}
+library(tidyverse)
+library(janitor)
+library(ggthemes)
+library(paletteer)
+library(ggplot2)
+library(RColorBrewer)
+```
+
+#setting up aesthetics for later
+```{r}
+colors<- LaCroixColoR::lacroix_palette("Pamplemousse", type = "discrete")
+```
+
+#importing data
+```{r}
+viruses <- readr::read_csv("data/viruses.csv") %>% clean_names()
+```
+
+#cleaning data
+```{r}
+viruses <- viruses %>% 
+  filter(level == "Complete") %>% 
+  select(organism_name, organism_groups, level, size_mb, gc_percent, host, genes)
+```
+
+```{r}
+viruses<-viruses %>% 
+  separate(organism_groups, into = c("domain", "group", "family"),sep=";")
+```
+
+#glimpse of data
+```{r}
+glimpse(viruses)
+```
+
+#comparing viruses with bacterial vs archaeal hosts    
+#bacteria: larger genome size, more genes, higher gc content    
+#similar gene to genome size ratio    
+```{r}
+arch_bact <- viruses %>% 
+  filter(host == "archaea"|host == "bacteria")
+```
+
+```{r}
+data <- arch_bact %>% 
+  group_by(host) %>% 
+  summarize(size = mean(size_mb, na.rm = T),
+            gc = mean(gc_percent, na.rm = T),
+            gene = mean(genes, na.rm = T))
+```
+
+```{r}
+data %>% 
+  ggplot(aes(x=host, y=size, fill=host))+
+  geom_col()+
+  theme_solarized()+
+  scale_fill_manual(values=colors)+
+  labs(title = "Genome Size of Viruses by Host",
+       x="Host",
+       y="Genome Size (Mb)")
+```
+
+```{r}
+data %>% 
+  ggplot(aes(x=host, y=gc, fill=host))+
+  geom_col()+
+  theme_solarized()+
+  scale_fill_manual(values=colors)+
+  labs(title = "GC Content of Viruses by Host",
+       x="Host",
+       y="GC Content (Percent)")
+```
+
+```{r}
+data %>% 
+  ggplot(aes(x=host, y=gene, fill=host))+
+  geom_col()+
+  theme_solarized()+
+  scale_fill_manual(values=colors)+
+  labs(title = "Number of Genes in Virus Genomes by Host",
+       x="Host",
+       y="Number of Genes")
+```
+
+```{r}
+arch_bact %>% 
+  filter(genes != 0) %>% 
+  mutate(gene_mb_ratio = genes/size_mb) %>% 
+  group_by(host) %>% 
+  summarize(gene_content = mean(gene_mb_ratio, na.rm = T)) %>%
+  ggplot(aes(x=host, y=gene_content, fill=host))+
+  geom_col()+
+  theme_solarized()+
+  scale_fill_manual(values=colors)+
+  labs(title = "Gene to Genome Size Ratio by Host",
+       x="Host",
+       y="Genes to Genome Size (Genes/Mb)")
+```
+ 
