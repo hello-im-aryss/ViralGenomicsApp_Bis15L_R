@@ -1,0 +1,361 @@
+---
+title: "group project excel join"
+author: "Aryss Hearne"
+date: "2/26/2021"
+output: 
+  html_document: 
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#install.packages("stringr")
+```
+
+
+```{r}
+library(tidyverse)
+library(here)
+library(janitor)
+library(naniar)
+library(stringr)
+
+```
+
+```{r}
+
+virus<-readr::read_csv("data/viruses.csv")
+```
+
+
+```{r}
+virus2<-virus%>%
+  separate(`Organism Groups`, into = c("viruss","other","family"),sep=";") %>% 
+  select(-"viruss",-"other")
+virus2 <- janitor::clean_names(virus2)
+
+```
+
+
+```{r}
+
+virus3<-virus2 %>% 
+  separate(`host`, into = c("host1","host2","host3","host4", "host5"),sep=",")
+
+newv <- virus2 %>% 
+  separate_rows(host)
+
+
+
+library(tidyr)
+
+
+
+```
+
+
+```{r}
+virus3<- virus3 %>%
+  mutate(strain=word(organism_name, 1L,2, sep=fixed(" ")))
+
+new<- as.data.frame(table(virus3$strain)) %>% 
+  #filter(Freq==10) %>% 
+  rename(strain=Var1)
+
+virus4 <- full_join(virus3, new, by="strain")
+
+virus4$host_f <- paste(virus4$host1, virus4$host2,virus4$host3,virus4$host4,virus4$host5, sep=",")
+
+virus4 <- virus4 %>% 
+  separate_rows(host_f, sep=",") %>% 
+  filter(host_f!="NA")
+
+virus4<-virus4 %>%
+  filter(host_f!="plants") %>% 
+  filter(host_f!="diatom") %>%
+  mutate(size_to_gene_ratio= ifelse(genes>0,size_mb/genes,NA )) %>% 
+  mutate(number_of_hosts=ifelse(is.na(host1), 0, ifelse(is.na(host2), 1, 
+                                       ifelse(is.na(host3), 2,
+                                              ifelse(is.na(host4), 3, 
+                                                     ifelse(is.na(host5), 4, 5)))))) %>% 
+  select(organism_name, family, strain, size_mb, gc_percent, genes, size_to_gene_ratio, number_of_hosts, host_f, host1, host2, host3, host4, host5, Freq)
+
+virus4$host_f <- gsub(" vertebrates", "vertebrates", virus4$host_f)
+virus4$host_f <- gsub(" human", "human", virus4$host_f)
+virus4$host_f <- gsub("algae", "eukaryotic algae", virus4$host_f)
+  
+
+virus5<-virus4 %>% 
+  filter(Freq==10) %>% 
+  select(-host3,-host4,-host5)
+
+naniar::miss_var_summary(virus4)
+  
+view(virus4)
+  
+          
+
+```
+
+```{r}
+library(ggthemes)
+library(paletteer)
+library(RColorBrewer)
+library(ggplot2)
+```
+
+#Pallette Install: One for continious data, one for discrete
+```{r}
+devtools::install_github("johannesbjork/LaCroixColoR")
+colors<- LaCroixColoR::lacroix_palette("Pamplemousse", type = "discrete")
+colors_cont<-LaCroixColoR::lacroix_palette("Pamplemousse", n = 187, type = "continuous") #as long as the data you're describing is under 187 points long
+barplot(rep(1,14), axes=FALSE, col=colors)
+barplot(rep(1,100), axes=FALSE, col=colors_cont)
+```
+
+# Graph Aesthetics:
+```{r}
+#plot junk here
+theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))+
+#more plot junk here
+```
+
+```{r}
+
+virus4 %>% 
+  ggplot(aes(x=number_of_hosts, fill=number_of_hosts))+
+  geom_bar()+
+  theme_solarized()+
+  scale_fill_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+virus4 %>% 
+  ggplot(aes(x=number_of_hosts, y=size_to_gene_ratio, group=number_of_hosts))+
+  geom_col()+
+  theme_solarized()+
+  scale_fill_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+virus4 %>% 
+  ggplot(aes(x=number_of_hosts, y=genes, group=number_of_hosts))+
+  geom_col()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+
+virus4 %>% 
+  ggplot(aes(x=number_of_hosts, y=size_mb, group=number_of_hosts))+
+  geom_col()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+
+virus4 %>% 
+  filter(!is.na(host_f)) %>%
+  filter(!is.na(size_to_gene_ratio)) %>% 
+  ggplot(aes(x=host_f, y=size_to_gene_ratio, group=host_f,fill=host_f))+
+  geom_col()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+virus4 %>% 
+  filter(!is.na(host_f)) %>% 
+  filter(genes!=0) %>% 
+  ggplot(aes(x=host_f, y=genes, group=host_f,fill=host_f))+
+  geom_col()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+virus4 %>% 
+  filter(!is.na(host_f)) %>% 
+  ggplot(aes(x=host_f, y=size_mb, group=host_f, fill=host_f))+
+  geom_col()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+
+
+
+
+
+
+
+```
+
+
+
+```{r}
+
+virus4 %>% 
+  top_n(100,size_mb) %>% 
+  arrange(desc(size_mb)) %>% 
+  ggplot(aes(x=number_of_hosts))+
+  geom_bar()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+virus4 %>% 
+  top_n(100,size_mb) %>% 
+  arrange(desc(size_mb)) %>% 
+  ggplot(aes(x=host_f))+
+  geom_bar()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+virus4 %>% 
+  top_n(100,size_to_gene_ratio) %>% 
+  arrange(desc(size_to_gene_ratio)) %>% 
+  ggplot(aes(x=number_of_hosts))+
+  geom_bar()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+virus4 %>% 
+  top_n(100,size_to_gene_ratio) %>% 
+  arrange(desc(size_to_gene_ratio)) %>% 
+  ggplot(aes(x=host_f))+
+  geom_bar()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+virus4 %>% 
+  top_n(100,genes) %>% 
+  arrange(desc(genes)) %>% 
+  ggplot(aes(x=number_of_hosts))+
+  geom_bar()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+virus4 %>% 
+  top_n(100,genes) %>% 
+  arrange(desc(genes)) %>% 
+  ggplot(aes(x=host_f))+
+  geom_bar()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+  
+  
+  
+  
+
+```
+
+
+```{r}
+virus4 %>% 
+  group_by(family) %>% 
+  summarize(countt=n_distinct(organism_name), ave_num_host=mean(number_of_hosts)) %>% 
+  arrange(desc(ave_num_host))
+
+
+```
+
+
+
+```{r}
+
+virus4 %>% 
+  filter(family=="Peribunyaviridae") %>% 
+  ggplot(aes(x=number_of_hosts, y=size_to_gene_ratio, group=number_of_hosts))+
+  geom_col(fill="skyblue", alpha=0.7)
+
+virus4 %>% 
+  filter(family=="Peribunyaviridae") %>% 
+  ggplot(aes(x=number_of_hosts, group=number_of_hosts))+
+  geom_bar()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+virus4 %>% 
+  filter(family=="Peribunyaviridae") %>% 
+  ggplot(aes(x=number_of_hosts, y=size_mb, group=number_of_hosts))+
+  geom_col(fill="skyblue", alpha=0.7)
+
+virus4 %>% 
+  filter(family=="Peribunyaviridae") %>% 
+  ggplot(aes(x=number_of_hosts, y=genes, group=number_of_hosts))+
+  geom_col(fill="skyblue", alpha=0.7)
+
+
+
+
+virus4 %>% 
+  filter(family=="Peribunyaviridae") %>%
+  filter(!is.na(host_f)) %>%
+  filter(!is.na(size_to_gene_ratio)) %>% 
+  ggplot(aes(x=host_f, y=size_to_gene_ratio, group=host_f,fill=host_f))+
+  geom_col()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+virus4 %>% 
+  filter(family=="Peribunyaviridae") %>%
+  filter(!is.na(host_f)) %>% 
+  filter(genes!=0) %>% 
+  ggplot(aes(x=host_f, y=genes, group=host_f,fill=host_f))+
+  geom_col()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+
+virus4 %>% 
+  filter(family=="Peribunyaviridae") %>%
+  filter(!is.na(host_f)) %>% 
+  ggplot(aes(x=host_f, y=size_mb, group=host_f, fill=host_f))+
+  geom_col()+
+  theme_solarized()+
+  scale_color_manual(values=colors)+
+  theme(legend.position="top",
+        axis.text.x=element_text(angle=60, hjust=1))
+  
+ 
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
