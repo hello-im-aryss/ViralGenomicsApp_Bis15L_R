@@ -109,27 +109,27 @@ library(ggplot2)
 
 #Pallette Install: One for continious data, one for discrete
 ```{r}
-devtools::install_github("johannesbjork/LaCroixColoR")
+#devtools::install_github("johannesbjork/LaCroixColoR")
 colors<- LaCroixColoR::lacroix_palette("Pamplemousse", type = "discrete")
-colors_cont<-LaCroixColoR::lacroix_palette("Pamplemousse", n = 187, type = "continuous") #as long as the data you're describing is under 187 points long
-barplot(rep(1,14), axes=FALSE, col=colors)
+colors_cont<-LaCroixColoR::lacroix_palette("Pamplemousse", n = 14, type = "continuous") #as long as the data you're describing is under 187 points long
+#barplot(rep(1,14), axes=FALSE, col=colors)
 barplot(rep(1,100), axes=FALSE, col=colors_cont)
 ```
 
 # Graph Aesthetics:
 ```{r}
 #plot junk here
-theme_solarized()+
-  scale_color_manual(values=colors)+
-  theme(legend.position="top",
-        axis.text.x=element_text(angle=60, hjust=1))+
+#theme_solarized()+
+  #scale_color_manual(values=colors)+
+  #theme(legend.position="top",
+        #axis.text.x=element_text(angle=60, hjust=1))+
 #more plot junk here
 ```
 
 ```{r}
 
 virus4 %>% 
-  ggplot(aes(x=number_of_hosts, fill=number_of_hosts))+
+  ggplot(aes(x=number_of_hosts, fill=number_of_hosts,fill=host_f))+
   geom_bar()+
   theme_solarized()+
   scale_fill_manual(values=colors)+
@@ -137,27 +137,27 @@ virus4 %>%
         axis.text.x=element_text(angle=60, hjust=1))
 
 virus4 %>% 
-  ggplot(aes(x=number_of_hosts, y=size_to_gene_ratio, group=number_of_hosts))+
+  ggplot(aes(x=number_of_hosts,y=size_to_gene_ratio,group=number_of_hosts,fill=host_f))+
   geom_col()+
   theme_solarized()+
-  scale_fill_manual(values=colors)+
+  scale_fill_manual(values=colors_cont)+
   theme(legend.position="top",
         axis.text.x=element_text(angle=60, hjust=1))
 
 virus4 %>% 
-  ggplot(aes(x=number_of_hosts, y=genes, group=number_of_hosts))+
+  ggplot(aes(x=number_of_hosts, y=genes, group=number_of_hosts,fill=host_f))+
   geom_col()+
   theme_solarized()+
-  scale_color_manual(values=colors)+
+  scale_fill_manual(values=colors_cont)+
   theme(legend.position="top",
         axis.text.x=element_text(angle=60, hjust=1))
 
 
 virus4 %>% 
-  ggplot(aes(x=number_of_hosts, y=size_mb, group=number_of_hosts))+
+  ggplot(aes(x=number_of_hosts, y=size_mb, group=number_of_hosts,fill=host_f))+
   geom_col()+
   theme_solarized()+
-  scale_color_manual(values=colors)+
+  scale_fill_manual(values=colors_cont)+
   theme(legend.position="top",
         axis.text.x=element_text(angle=60, hjust=1))
 
@@ -168,7 +168,7 @@ virus4 %>%
   ggplot(aes(x=host_f, y=size_to_gene_ratio, group=host_f,fill=host_f))+
   geom_col()+
   theme_solarized()+
-  scale_color_manual(values=colors)+
+  scale_fill_manual(values=colors_cont)+
   theme(legend.position="top",
         axis.text.x=element_text(angle=60, hjust=1))
 
@@ -178,7 +178,7 @@ virus4 %>%
   ggplot(aes(x=host_f, y=genes, group=host_f,fill=host_f))+
   geom_col()+
   theme_solarized()+
-  scale_color_manual(values=colors)+
+  scale_fill_manual(values=colors_cont)+
   theme(legend.position="top",
         axis.text.x=element_text(angle=60, hjust=1))
 
@@ -187,7 +187,7 @@ virus4 %>%
   ggplot(aes(x=host_f, y=size_mb, group=host_f, fill=host_f))+
   geom_col()+
   theme_solarized()+
-  scale_color_manual(values=colors)+
+  scale_fill_manual(values=colors_cont)+
   theme(legend.position="top",
         axis.text.x=element_text(angle=60, hjust=1))
 
