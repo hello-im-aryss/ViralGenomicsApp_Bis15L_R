@@ -89,7 +89,7 @@ virus4$number_of_hosts <- as.factor(virus4$number_of_hosts)
 ```
 
 
-*Palette Install: One for continious data, two for discrete*
+*Pallette Install: One for continious data, two for discrete*
 ```{r}
 #devtools::install_github("johannesbjork/LaCroixColoR")
 

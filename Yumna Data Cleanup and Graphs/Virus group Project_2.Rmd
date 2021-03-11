@@ -31,7 +31,7 @@ virus <- read_csv(here("Yumna Data Cleanup and Graphs", "Data", "viruses.csv"))
 ```
 
 
-*Data Tidying starts here* 
+### Data Tidying starts here ###
 
 ```{r}
 virus2<-virus%>%
@@ -89,7 +89,7 @@ virus4$number_of_hosts <- as.factor(virus4$number_of_hosts)
 ```
 
 
-*Palette Install: One for continious data, two for discrete*
+### Palette Install: One for continious data, two for discrete ###
 ```{r}
 #devtools::install_github("johannesbjork/LaCroixColoR")
 
@@ -100,7 +100,7 @@ barplot(rep(1,14), axes=FALSE, col=colors)
 barplot(rep(1,100), axes=FALSE, col=colors_cont)
 ```
 
-*Graphs plotted that were used in presentation*
+### Graphs plotted that were used in presentation ###
 
 ```{r}
 #png('Counts of Number of Hosts.png')
@@ -211,7 +211,7 @@ virus4 %>%
 ```
 
 
-*Some extraneous data exploration that did not make it into the presentation*
+### Some extraneous data exploration that did not make it into the presentation ###
 
 ```{r}
 
