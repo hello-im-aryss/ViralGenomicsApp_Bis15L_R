@@ -18,6 +18,8 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(janitor)
+library(ggthemes)
+library(paletteer)
 ```
 
 ### Load relevant csv
@@ -41,7 +43,7 @@ levels(virus$Host)
 ### Fix the multiple hosts per host category nonsense.
 ```{r}
 virus_c<-virus%>%
-  separate('Host', into=c("host_type_1", "host_type_2", "host_type_3"), sep=",")
+  separate('Host', into=c("host_type_1", "host_type_2", "host_type_3", "host_type_4", "host_type_5"), sep=",")
 virus_c
 ```
 
@@ -50,6 +52,8 @@ virus_c
 virus_c$host_type_1<-as.factor(virus_c$host_type_1)
 virus_c$host_type_2<-as.factor(virus_c$host_type_2)
 virus_c$host_type_3<-as.factor(virus_c$host_type_3)
+virus_c$host_type_4<-as.factor(virus_c$host_type_4)
+virus_c$host_type_5<-as.factor(virus_c$host_type_5)
 levels(virus_c$host_type_1)
 ```
 
@@ -59,6 +63,15 @@ levels(virus_c$host_type_2)
 ```{r}
 levels(virus_c$host_type_3)
 ```
+```{r}
+levels(virus_c$host_type_4)
+```
+```{r}
+levels(virus_c$host_type_5)
+```
+
+
+
 ```{r}
 virus_clong<-virus_c%>%
   pivot_longer(host_type_1:host_type_3,
@@ -133,8 +146,17 @@ virus_clean2%>%
   ggplot(aes(x=host, y=gene_to_genome_ratio))+
   geom_boxplot()
 ```
+
 ```{r}
-ggplot(virus_clean2, aes(x=genes_num, y=size_mb, size=perc_gc, color=host, group=host))+
+devtools::install_github("johannesbjork/LaCroixColoR")
+colors<- LaCroixColoR::lacroix_palette("Pamplemousse", type = "discrete")
+```
+
+
+
+```{r}
+virus_clean2%>%
+  ggplot(aes(x=genes_num, y=size_mb, size=perc_gc, color=host, group=host))+
       geom_jitter(alpha=0.25)+
       facet_grid(. ~kingdom)+
       #aesthetics
@@ -142,7 +164,9 @@ ggplot(virus_clean2, aes(x=genes_num, y=size_mb, size=perc_gc, color=host, group
       theme(legend.position="top",
             axis.text.x=element_text(angle=60, hjust=1))+
       scale_size(range = c(0.1, 10),
-                 guide = "none") 
+                 guide = "none")+
+  scale_color_manual(values=colors)+
+
       #labels
       labs(x="Number of Genes",
            y="Genome Size (Mb)",

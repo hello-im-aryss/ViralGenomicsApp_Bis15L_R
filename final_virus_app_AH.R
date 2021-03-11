@@ -28,21 +28,24 @@ virus<-readr::read_csv("data/viruses.csv")
 #include palette
 colors<- LaCroixColoR::lacroix_palette("Pamplemousse", type = "discrete")
 moth<-wesanderson::wes_palette("GrandBudapest2",12,"continuous")
+
+
 # clean data
 virus_app<-virus%>%
-  separate('Host', into=c("host_type_1", "host_type_2", "host_type_3"), sep=",")%>%
+  separate('Host', into=c("host_type_1", "host_type_2", "host_type_3", "host_type_4", "host_type_5"), sep=",")%>%
   pivot_longer(host_type_1:host_type_3,
                names_to="host_num",
                values_to="host_type",
                values_drop_na=T)%>%
   separate('Organism Groups', into=c("domain", "kingdom", "subgroup"), sep=";")%>%
-  filter(Level=="Complete" & (host_type=="human" | host_type=="land plants"))%>%
+  filter(Level=="Complete" & (host_type=="human" | host_type=="land plants" | host_type==" human"))
+#Clean part 2
+virus_app2<-virus_app%>%
   select('host_type', 'Organism Name', 'kingdom','subgroup', 'Size(Mb)', 'GC%', 'Genes','Level')%>%
   rename(organism_name='Organism Name', kingdom=kingdom, subgroup=subgroup, level="Level", size_mb='Size(Mb)', perc_gc='GC%', host=host_type, genes_num='Genes')%>%
   mutate(gene_to_genome_ratio=genes_num/size_mb, na.rm=T)%>%
   arrange(host)
-
-
+virus_app2$host <- gsub(" human", "human", virus_app2$host)
 
 
 # Introduce App: Fluid Page
@@ -108,13 +111,13 @@ tabPanel("Home", fluid=T, icon=icon("seedling"),
                       titlePanel("And by Kingdom"),
                       fluidRow(
                         column(6,
-                               sliderInput("zoomx", 
+                               sliderInput("zoomx1", 
                                            label = "Zoom X Axis", 
                                            min=0, 
                                            max=400, 
                                            value=c(0,400))),
                         column(6,
-                               sliderInput("zoomy", 
+                               sliderInput("zoomy1", 
                                            label = "Zoom Y Axis", 
                                            min=0, 
                                            max=.25, 
@@ -158,7 +161,7 @@ server <- function(input, output, session) {
   #plot info
   output$plot<-renderPlot({
     #plot parameters
-    ggplot(virus_app, aes(x=genes_num, y=size_mb, size=perc_gc, color=host, group=host))+
+    ggplot(virus_app2, aes(x=genes_num, y=size_mb, size=perc_gc, color=host, group=host))+
       geom_point(alpha=0.25)+
       xlim(input$zoomx)+
       ylim(input$zoomy)+
@@ -177,12 +180,12 @@ server <- function(input, output, session) {
       #text
       geom_text(aes(x = genes_num, label = organism_name),
                 color = "grey50",
-                data = filter(virus_app, size_mb > .23 | genes_num >300 | organism_name %in% c("Zika virus", "Human betaherpesvirus", "Horsepox virus")))
+                data = filter(virus_app2, size_mb > .23 | genes_num >300 | organism_name %in% c("Zika virus", "Human betaherpesvirus", "Horsepox virus")))
   })#end plot0
   #plot info
   output$plot1<-renderPlot({
     #plot parameters
-    ggplot(virus_app, aes(x=genes_num, y=size_mb, size=perc_gc, color=host, group=host))+
+    ggplot(virus_app2, aes(x=genes_num, y=size_mb, size=perc_gc, color=host, group=host))+
       geom_point(alpha=0.25)+
       scale_x_log10()+
       scale_y_log10()+
@@ -201,16 +204,16 @@ server <- function(input, output, session) {
       #text
       geom_text(aes(x = genes_num, label = organism_name),
                 color = "grey50",
-                data = filter(virus_app, size_mb > .23 | genes_num >300 | organism_name %in% c("Zika virus", "Human betaherpesvirus", "Horsepox virus")))
+                data = filter(virus_app2, size_mb > .23 | genes_num >300 | organism_name %in% c("Zika virus", "Human betaherpesvirus", "Horsepox virus")))
   })#end plot1
   #plot info 1.5
   output$plot1_5<-renderPlot({
     #plot parameters
-    ggplot(virus_app, aes(x=genes_num, y=size_mb, size=perc_gc, color=host, group=host))+
+    ggplot(virus_app2, aes(x=genes_num, y=size_mb, size=perc_gc, color=host, group=host))+
       geom_point(alpha=0.25)+
       facet_grid(. ~kingdom)+
-      xlim(input$zoomx)+
-      ylim(input$zoomy)+
+      xlim(input$zoomx1)+
+      ylim(input$zoomy1)+
       #aesthetics
       theme_solarized()+
       scale_color_manual(values=colors)+
@@ -226,13 +229,13 @@ server <- function(input, output, session) {
       #text
       geom_text(aes(x = genes_num, label = organism_name),
                 color = "grey50",
-                data = filter(virus_app, size_mb > .23 | genes_num >300 | organism_name %in% c("Zika virus", "Human betaherpesvirus", "Horsepox virus")))
+                data = filter(virus_app2, size_mb > .23 | genes_num >300 | organism_name %in% c("Zika virus", "Human betaherpesvirus", "Horsepox virus")))
   })#end plot1
   output$plot2<-renderPlot({
     #plot2 parameters
-    virus_app%>%
+    virus_app2%>%
       ggplot(aes(x=host, y=gene_to_genome_ratio, fill=host, color=kingdom, size=perc_gc))+
-      geom_point(alpha=0.25)+
+      geom_point(alpha=0.01)+
       geom_boxplot(varwidth = T, outlier.size = 3.5)+
       facet_grid(. ~kingdom)+
       #aesthetics for plot 2
@@ -252,7 +255,7 @@ server <- function(input, output, session) {
   #output point and click
 viralbrush<-reactive({
   user_viralbrush<-input$plot_brush
-  brushedPoints(virus_app,user_viralbrush)
+  brushedPoints(virus_app2,user_viralbrush)
 })#end brush parameters
 
 output$virustable1<-DT::renderDataTable({
