@@ -11,6 +11,7 @@ if (!require("devtools")) install.packages('devtools')
 if (!require("shinycssloaders")) install.packages('shinycssloaders')
 if (!require("DT")) install.packages('DT')
 devtools::install_github("johannesbjork/LaCroixColoR")
+devtools::install_github("karthik/wesanderson") 
 # libraries
 library(tidyverse)
 library(here)
